@@ -1,0 +1,13 @@
+[package]
+name = "rust_monkey"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+opt-level = 3
+rustflags = ["-C", "target-cpu=native"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.66"
+fallible-iterator = "0.2.0"
