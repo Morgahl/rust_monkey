@@ -1,0 +1,12 @@
+[package]
+name = "mnky"
+version = "0.1.0"
+edition = "2021"
+description = "A REPL for the Monkey programming language"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { verison = "4.3.1", features = ["derive"] }
+fallible-iterator = { workspace = true }
+monkey = { path = "../monkey" }

@@ -1,0 +1,11 @@
+[package]
+name = "monkey"
+version = "0.1.0"
+edition = "2021"
+description = "An implementation of the Monkey programming language"
+publish = false
+
+[dependencies]
+anyhow = {workspace = true}
+fallible-iterator = {workspace = true}
+assert_matches = {workspace = true}
