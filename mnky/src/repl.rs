@@ -3,7 +3,7 @@ use std::io::{BufRead, BufReader, Read, Write};
 use anyhow::Result;
 use fallible_iterator::FallibleIterator;
 
-use monkey::lexer::Lexer;
+use monkey::lexer::Lexable;
 
 const PROMPT: &'static str = "mnky> ";
 
@@ -19,10 +19,15 @@ where
             continue;
         }
 
-        Lexer::new(&line).for_each(|token| {
-            println!("{:?}", token);
-            Ok(())
-        })?;
+        for maybe_token in line.lex().iterator() {
+            match maybe_token {
+                Ok(token) => writeln!(stdout, "{:?}", token)?,
+                Err(e) => {
+                    writeln!(stdout, "Error: {}", e)?;
+                    break;
+                }
+            }
+        }
     }
 }
 

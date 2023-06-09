@@ -1,7 +1,7 @@
 use assert_matches::assert_matches;
 use fallible_iterator::FallibleIterator;
 
-use monkey::{lexer::Lexer, token::Token};
+use monkey::{lexer::Lexable, token::Token};
 
 const INPUT: &str = "\
     let five = 5;\n\
@@ -98,7 +98,8 @@ fn test_lexer_iterator() {
         Token::Int("9".to_string()),
         Token::Semicolon,
     ];
-    let mut lexer = Lexer::new(INPUT);
+
+    let mut lexer = INPUT.lex();
 
     for expected_token in expected {
         assert_matches!(lexer.next(), Ok(Some(token)) if token == expected_token);

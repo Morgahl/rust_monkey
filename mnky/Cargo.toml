@@ -7,6 +7,6 @@ publish = false
 
 [dependencies]
 anyhow = { workspace = true }
-clap = { verison = "4.3.1", features = ["derive"] }
+clap = { version = "4.3.1", features = ["derive"] }
 fallible-iterator = { workspace = true }
 monkey = { path = "../monkey" }

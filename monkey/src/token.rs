@@ -67,7 +67,7 @@ impl Token {
     pub const KW_RETURN: &'static str = "return";
 
     // Returns a keyword token if the given string is a keyword, otherwise returns None
-    pub fn keyword_or_identifier(kw_str: String) -> Self {
+    pub fn keyword_or_identifier(kw_str: &String) -> Self {
         match kw_str.as_str() {
             Self::KW_FN => Self::Fn,
             Self::KW_LET => Self::Let,
@@ -76,7 +76,7 @@ impl Token {
             Self::KW_IF => Self::If,
             Self::KW_ELSE => Self::Else,
             Self::KW_RETURN => Self::Return,
-            _ => Self::Identifier(kw_str),
+            _ => Self::Identifier(kw_str.clone()),
         }
     }
 
@@ -106,8 +106,8 @@ impl Token {
             Self::If => Self::KW_IF.to_string(),
             Self::Else => Self::KW_ELSE.to_string(),
             Self::Return => Self::KW_RETURN.to_string(),
-            Self::Identifier(s) => s.to_string(),
-            Self::Int(s) => s.to_string(),
+            Self::Identifier(s) => s.clone(),
+            Self::Int(s) => s.clone(),
         }
     }
 }

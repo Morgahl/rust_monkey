@@ -6,46 +6,65 @@ use fallible_iterator::FallibleIterator;
 
 use crate::token::Token;
 
+pub trait Lexable<'a> {
+    fn lex(self) -> Lexer<'a>;
+}
+
+impl<'a, I> Lexable<'a> for I
+where
+    I: Into<&'a str>,
+{
+    #[inline(always)]
+    fn lex(self) -> Lexer<'a> {
+        Lexer::new(self.into())
+    }
+}
+
 pub struct Lexer<'a> {
     chars: Peekable<Enumerate<Chars<'a>>>,
+    scratch: String,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(input: &'a str) -> Lexer<'a> {
+    #[inline(always)]
+    fn new(input: &'a str) -> Lexer<'a> {
         Lexer {
             chars: input.chars().enumerate().peekable(),
+            scratch: String::with_capacity(16),
         }
     }
 
+    #[inline(always)]
     fn read_then_else(&mut self, c: char, then: Token, els: Token) -> Token {
         self.chars.next();
-        self.chars
-            .next_if(|(_, next)| *next == c)
-            .map(|_| then)
-            .unwrap_or(els)
+        self.chars.next_if(|(_, next)| *next == c).and(Some(then)).unwrap_or(els)
     }
 
+    #[inline(always)]
     fn read_keyword_or_identifier(&mut self) -> Token {
-        let mut ident = String::new();
+        self.scratch.clear();
         while let Some((_, c)) = self.chars.next_if(|(_, c)| c.is_ascii_alphanumeric()) {
-            ident.push(c);
+            self.scratch.push(c);
         }
-        Token::keyword_or_identifier(ident)
+        Token::keyword_or_identifier(&self.scratch)
     }
 
+    #[inline(always)]
     fn read_integer(&mut self) -> Token {
-        let mut int = String::new();
+        self.scratch.clear();
         while let Some((_, c)) = self.chars.next_if(|(_, c)| c.is_ascii_digit()) {
-            int.push(c);
+            self.scratch.push(c);
         }
-        Token::Int(int)
+        Token::Int(self.scratch.clone())
     }
 
+    #[inline(always)]
     fn read_token(&mut self, token: Token) -> Token {
         self.chars.next();
         token
     }
 
+    #[inline(always)]
     fn skip_whitespace(&mut self) {
         while let Some(_) = self.chars.next_if(|(_, c)| c.is_whitespace()) {}
     }
@@ -80,6 +99,7 @@ impl<'a> FallibleIterator for Lexer<'a> {
     type Item = Token;
     type Error = anyhow::Error;
 
+    #[inline(always)]
     fn next(&mut self) -> Result<Option<Self::Item>> {
         self.next_token()
     }

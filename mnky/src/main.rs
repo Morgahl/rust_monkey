@@ -26,6 +26,8 @@ enum Commands {
 
 fn cmd_repl() -> Result<()> {
     let stdin = std::io::stdin();
-    let stdoout = std::io::stdout();
-    repl::start(&mut stdin.lock(), &mut stdoout.lock())
+    // let stdout = std::io::stdout();
+    // repl::start(&mut stdin.lock(), &mut stdout.lock())
+    let stderr = std::io::stderr();
+    repl::start(&mut stdin.lock(), &mut stderr.lock())
 }
