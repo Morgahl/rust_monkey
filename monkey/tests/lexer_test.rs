@@ -1,28 +1,24 @@
-use assert_matches::assert_matches;
-use fallible_iterator::FallibleIterator;
-
 use monkey::{lexer::Lexable, token::Token};
 
-const INPUT: &str = "\
-    let five = 5;\n\
-    let test = 10;\n\
-    let add = fn(x, y) {\n\
-        x + y;\n\
-    };\n\
-    let result = add(five, ten);\n\
-    !-/*5;\n\
-    5 < 10 > 5;\n\
-    if (5 < 10) {\n\
-        return true;\n\
-    } else {\n\
-        return false;\n\
-    }\n\
-    10 == 10;\n\
-    10 != 9;\n\
-    ";
-
 #[test]
-fn test_lexer_iterator() {
+fn test_lexer_correct() {
+    const INPUT: &str = "\
+        let five = 5;\n\
+        let test = 10;\n\
+        let add = fn(x, y) {\n\
+            x + y;\n\
+        };\n\
+        let result = add(five, ten);\n\
+        !-/*5;\n\
+        5 < 10 > 5;\n\
+        if (5 < 10) {\n\
+            return true;\n\
+        } else {\n\
+            return false;\n\
+        }\n\
+        10 == 10;\n\
+        10 != 9;\n\
+        ";
     let expected = vec![
         Token::Let,
         Token::Identifier("five".to_string()),
@@ -97,15 +93,42 @@ fn test_lexer_iterator() {
         Token::NotEq,
         Token::Int("9".to_string()),
         Token::Semicolon,
+        Token::EOF,
     ];
 
     let mut lexer = INPUT.lex();
 
     for expected_token in expected {
-        assert_matches!(lexer.next(), Ok(Some(token)) if token == expected_token);
+        assert_eq!(lexer.next(), Some(expected_token));
     }
 
-    assert_matches!(lexer.next(), Ok(None));
-    // assert second call to next() after EOF returns None
-    assert_matches!(lexer.next(), Ok(None));
+    // assert subsequent calls to next() after EOF returns None
+    assert_eq!(lexer.next(), None);
+    assert_eq!(lexer.next(), None);
+}
+
+#[test]
+fn test_lexer_invalid() {
+    const INPUT: &str = "\
+        let five = 5;\n\
+        ?\n\
+        ";
+    let expected = vec![
+        Token::Let,
+        Token::Identifier("five".to_string()),
+        Token::Assign,
+        Token::Int("5".to_string()),
+        Token::Semicolon,
+        Token::Invalid('?', 14),
+    ];
+
+    let mut lexer = INPUT.lex();
+
+    for expected_token in expected {
+        assert_eq!(lexer.next(), Some(expected_token));
+    }
+
+    // assert subsequent calls to next() after Invalid returns None
+    assert_eq!(lexer.next(), None);
+    assert_eq!(lexer.next(), None);
 }

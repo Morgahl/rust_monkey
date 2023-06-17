@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Token {
     // Single-character tokens
     Assign,    // =
@@ -34,6 +34,12 @@ pub enum Token {
 
     // literal tokens
     Int(String),
+
+    // end of file
+    EOF,
+
+    // Invalid token
+    Invalid(char, usize), // Invalid token (character, position)
 }
 
 impl Token {
@@ -67,8 +73,8 @@ impl Token {
     pub const KW_RETURN: &'static str = "return";
 
     // Returns a keyword token if the given string is a keyword, otherwise returns None
-    pub fn keyword_or_identifier(kw_str: &String) -> Self {
-        match kw_str.as_str() {
+    pub fn keyword_or_identifier(kw: &String) -> Self {
+        match kw.as_str() {
             Self::KW_FN => Self::Fn,
             Self::KW_LET => Self::Let,
             Self::KW_TRUE => Self::True,
@@ -76,38 +82,41 @@ impl Token {
             Self::KW_IF => Self::If,
             Self::KW_ELSE => Self::Else,
             Self::KW_RETURN => Self::Return,
-            _ => Self::Identifier(kw_str.clone()),
+            _ => Self::Identifier(kw.clone()),
         }
     }
+}
 
-    // Returns a String literal of the token
-    pub fn literal(&self) -> String {
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Assign => Self::SYM_ASSIGN.to_string(),
-            Self::Plus => Self::SYM_PLUS.to_string(),
-            Self::Minus => Self::SYM_MINUS.to_string(),
-            Self::Bang => Self::SYM_BANG.to_string(),
-            Self::Asterisk => Self::SYM_ASTERISK.to_string(),
-            Self::Slash => Self::SYM_SLASH.to_string(),
-            Self::LThan => Self::SYM_LT.to_string(),
-            Self::GThan => Self::SYM_GT.to_string(),
-            Self::Comma => Self::SYM_COMMA.to_string(),
-            Self::Semicolon => Self::SYM_SEMICOLON.to_string(),
-            Self::LParen => Self::SYM_LPAREN.to_string(),
-            Self::RParen => Self::SYM_RPAREN.to_string(),
-            Self::LBrace => Self::SYM_LBRACE.to_string(),
-            Self::RBrace => Self::SYM_RBRACE.to_string(),
-            Self::Eq => Self::SYM_EQ.to_string(),
-            Self::NotEq => Self::SYM_NOT_EQ.to_string(),
-            Self::Fn => Self::KW_FN.to_string(),
-            Self::Let => Self::KW_LET.to_string(),
-            Self::True => Self::KW_TRUE.to_string(),
-            Self::False => Self::KW_FALSE.to_string(),
-            Self::If => Self::KW_IF.to_string(),
-            Self::Else => Self::KW_ELSE.to_string(),
-            Self::Return => Self::KW_RETURN.to_string(),
-            Self::Identifier(s) => s.clone(),
-            Self::Int(s) => s.clone(),
+            Self::EOF => write!(f, "EOF"),
+            Self::Invalid(c, pos) => write!(f, "Invalid char '{}' at position {}", c, pos),
+            Self::Assign => write!(f, "{}", Self::SYM_ASSIGN),
+            Self::Plus => write!(f, "{}", Self::SYM_PLUS),
+            Self::Minus => write!(f, "{}", Self::SYM_MINUS),
+            Self::Bang => write!(f, "{}", Self::SYM_BANG),
+            Self::Asterisk => write!(f, "{}", Self::SYM_ASTERISK),
+            Self::Slash => write!(f, "{}", Self::SYM_SLASH),
+            Self::LThan => write!(f, "{}", Self::SYM_LT),
+            Self::GThan => write!(f, "{}", Self::SYM_GT),
+            Self::Comma => write!(f, "{}", Self::SYM_COMMA),
+            Self::Semicolon => write!(f, "{}", Self::SYM_SEMICOLON),
+            Self::LParen => write!(f, "{}", Self::SYM_LPAREN),
+            Self::RParen => write!(f, "{}", Self::SYM_RPAREN),
+            Self::LBrace => write!(f, "{}", Self::SYM_LBRACE),
+            Self::RBrace => write!(f, "{}", Self::SYM_RBRACE),
+            Self::Eq => write!(f, "{}", Self::SYM_EQ),
+            Self::NotEq => write!(f, "{}", Self::SYM_NOT_EQ),
+            Self::Fn => write!(f, "{}", Self::KW_FN),
+            Self::Let => write!(f, "{}", Self::KW_LET),
+            Self::True => write!(f, "{}", Self::KW_TRUE),
+            Self::False => write!(f, "{}", Self::KW_FALSE),
+            Self::If => write!(f, "{}", Self::KW_IF),
+            Self::Else => write!(f, "{}", Self::KW_ELSE),
+            Self::Return => write!(f, "{}", Self::KW_RETURN),
+            Self::Identifier(s) => write!(f, "{}", s),
+            Self::Int(s) => write!(f, "{}", s),
         }
     }
 }

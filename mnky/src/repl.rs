@@ -1,7 +1,6 @@
 use std::io::{BufRead, BufReader, Read, Write};
 
 use anyhow::Result;
-use fallible_iterator::FallibleIterator;
 
 use monkey::lexer::Lexable;
 
@@ -19,14 +18,8 @@ where
             continue;
         }
 
-        for maybe_token in line.lex().iterator() {
-            match maybe_token {
-                Ok(token) => writeln!(stdout, "{:?}", token)?,
-                Err(e) => {
-                    writeln!(stdout, "Error: {}", e)?;
-                    break;
-                }
-            }
+        for token in line.lex() {
+            writeln!(stdout, "{0:?}\t{0}", token)?
         }
     }
 }

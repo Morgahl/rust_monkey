@@ -1,9 +1,6 @@
 use std::iter::{Enumerate, Peekable};
 use std::str::Chars;
 
-use anyhow::{bail, Result};
-use fallible_iterator::FallibleIterator;
-
 use crate::token::Token;
 
 pub trait Lexable<'a> {
@@ -20,30 +17,48 @@ where
     }
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Lexer<'a> {
-    chars: Peekable<Enumerate<Chars<'a>>>,
     scratch: String,
+    chars: Option<Peekable<Enumerate<Chars<'a>>>>,
 }
 
 impl<'a> Lexer<'a> {
     #[inline(always)]
     fn new(input: &'a str) -> Lexer<'a> {
-        Lexer {
-            chars: input.chars().enumerate().peekable(),
-            scratch: String::with_capacity(16),
-        }
+        // 52 is the max length of an underscore delimited 128 signed negative integer literal so we chose the next
+        // highest power of 2 (64) to avoid reallocations.
+        let scratch = String::with_capacity(64);
+        let chars = Some(input.chars().enumerate().peekable());
+        Lexer { scratch, chars }
     }
 
     #[inline(always)]
     fn read_then_else(&mut self, c: char, then: Token, els: Token) -> Token {
-        self.chars.next();
-        self.chars.next_if(|(_, next)| *next == c).and(Some(then)).unwrap_or(els)
+        self.chars
+            .as_mut()
+            .expect("read_then_else should always be called with a Some(chars)")
+            .next();
+        match self
+            .chars
+            .as_mut()
+            .expect("read_then_else should always be called with a Some(chars)")
+            .next_if(|(_, next)| *next == c)
+        {
+            Some(_) => then,
+            None => els,
+        }
     }
 
     #[inline(always)]
     fn read_keyword_or_identifier(&mut self) -> Token {
         self.scratch.clear();
-        while let Some((_, c)) = self.chars.next_if(|(_, c)| c.is_ascii_alphanumeric()) {
+        while let Some((_, c)) = self
+            .chars
+            .as_mut()
+            .expect("read_keyword_or_identifier should always be called with a Some(chars)")
+            .next_if(|(_, c)| c.is_ascii_alphanumeric())
+        {
             self.scratch.push(c);
         }
         Token::keyword_or_identifier(&self.scratch)
@@ -52,7 +67,12 @@ impl<'a> Lexer<'a> {
     #[inline(always)]
     fn read_integer(&mut self) -> Token {
         self.scratch.clear();
-        while let Some((_, c)) = self.chars.next_if(|(_, c)| c.is_ascii_digit()) {
+        while let Some((_, c)) = self
+            .chars
+            .as_mut()
+            .expect("read_integer should always be called with a Some(chars)")
+            .next_if(|(_, c)| matches!(*c, '0'..='9' | '_'))
+        {
             self.scratch.push(c);
         }
         Token::Int(self.scratch.clone())
@@ -60,18 +80,27 @@ impl<'a> Lexer<'a> {
 
     #[inline(always)]
     fn read_token(&mut self, token: Token) -> Token {
-        self.chars.next();
+        self.chars.as_mut().expect("read_token should always be called with a Some(chars)").next();
         token
     }
 
     #[inline(always)]
     fn skip_whitespace(&mut self) {
-        while let Some(_) = self.chars.next_if(|(_, c)| c.is_whitespace()) {}
+        while let Some(_) = self
+            .chars
+            .as_mut()
+            .expect("skip_whitespace should always be called with a Some(chars)")
+            .next_if(|(_, c)| c.is_whitespace())
+        {}
     }
 
-    fn next_token(&mut self) -> Result<Option<Token>> {
+    fn next_token(&mut self) -> Option<Token> {
+        if self.chars.is_none() {
+            return None;
+        }
+
         self.skip_whitespace();
-        let token = match self.chars.peek() {
+        let token = match self.chars.as_mut().unwrap().peek() {
             Some((_, Token::SYM_ASSIGN)) => self.read_then_else('=', Token::Eq, Token::Assign),
             Some((_, Token::SYM_PLUS)) => self.read_token(Token::Plus),
             Some((_, Token::SYM_MINUS)) => self.read_token(Token::Minus),
@@ -88,19 +117,21 @@ impl<'a> Lexer<'a> {
             Some((_, Token::SYM_RBRACE)) => self.read_token(Token::RBrace),
             Some((_, c)) if c.is_ascii_alphabetic() => self.read_keyword_or_identifier(),
             Some((_, c)) if c.is_ascii_digit() => self.read_integer(),
-            Some((n, c)) => bail!("unexpected character: {:?} at {}", c, n),
-            None => return Ok(None),
+            Some((n, c)) => Token::Invalid(*c, *n),
+            None => Token::EOF,
         };
-        Ok(Some(token))
+        if matches!(token, Token::Invalid(_, _) | Token::EOF) {
+            self.chars = None;
+        }
+        Some(token)
     }
 }
 
-impl<'a> FallibleIterator for Lexer<'a> {
+impl<'a> Iterator for Lexer<'a> {
     type Item = Token;
-    type Error = anyhow::Error;
 
     #[inline(always)]
-    fn next(&mut self) -> Result<Option<Self::Item>> {
+    fn next(&mut self) -> Option<Self::Item> {
         self.next_token()
     }
 }

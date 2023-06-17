@@ -1,4 +1,4 @@
-use fallible_iterator::{FallibleIterator, Peekable};
+use std::iter::Peekable;
 
 use crate::{lexer::Lexer, token::Token};
 
@@ -23,19 +23,25 @@ impl Node for Program {
     }
 }
 
-pub struct LetStatement {
+pub struct LetStatement<Expr>
+where
+    Expr: Expression,
+{
     token: Token,
     name: Identifier,
-    value: Box<dyn Expression>,
+    value: Expr,
 }
 
-impl Node for LetStatement {
+impl<Expr> Node for LetStatement<Expr>
+where
+    Expr: Expression,
+{
     fn token_literal(&self) -> String {
-        self.token.literal()
+        self.token.to_string()
     }
 }
 
-impl Statement for LetStatement {}
+impl<Expr> Statement for LetStatement<Expr> where Expr: Expression {}
 
 struct Identifier {
     token: Token,
@@ -44,7 +50,7 @@ struct Identifier {
 
 impl Node for Identifier {
     fn token_literal(&self) -> String {
-        self.token.literal()
+        self.token.to_string()
     }
 }
 
@@ -56,17 +62,6 @@ pub struct Parser<'a> {
 
 impl Parser<'_> {
     pub fn new<'a>(lexer: &'a mut Lexer<'a>) -> Parser<'a> {
-        Parser {
-            lexer: lexer.peekable(),
-        }
-    }
-}
-
-impl FallibleIterator for Parser<'_> {
-    type Item = Box<dyn Statement>;
-    type Error = anyhow::Error;
-
-    fn next(&mut self) -> Result<Option<Self::Item>, Self::Error> {
-        Ok(None)
+        Parser { lexer: lexer.peekable() }
     }
 }
